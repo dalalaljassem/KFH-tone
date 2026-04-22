@@ -3,6 +3,7 @@ const state = {
   audience: "General",
   type: "Button",
   filter: "KFH",
+  tableTypeFilter: "All",
   searchQuery: "",
   currentPage: 1,
   perPage: 10,
@@ -232,16 +233,28 @@ function setSeg(key, value, clickedBtn) {
   clickedBtn.classList.add("seg-control__btn--active");
   if (key === "product") {
     const audienceSeg = document.getElementById("seg-audience");
-    audienceSeg.innerHTML =
-      value === "KFH"
-        ? `<button class="seg-control__btn seg-control__btn--active" onclick="setSeg('audience','General',this)">General</button>
+    if (audienceSeg) {
+      audienceSeg.innerHTML =
+        value === "KFH"
+          ? `<button class="seg-control__btn seg-control__btn--active" onclick="setSeg('audience','General',this)">General</button>
            <button class="seg-control__btn" onclick="setSeg('audience','Youth',this)">Youth</button>`
-        : `<button class="seg-control__btn seg-control__btn--active" onclick="setSeg('audience','General',this)">General</button>
+          : `<button class="seg-control__btn seg-control__btn--active" onclick="setSeg('audience','General',this)">General</button>
            <button class="seg-control__btn" onclick="setSeg('audience','TAM-Girls',this)">Girls</button>
            <button class="seg-control__btn" onclick="setSeg('audience','TAM-Boys',this)">Boys</button>`;
-    state.audience = "General";
+      state.audience = "General";
+    }
   }
-  checkForDuplicate();
+}
+
+function setTableType(value, clickedBtn) {
+  state.tableTypeFilter = value;
+  const control = clickedBtn.closest(".filter-chips");
+  control
+    .querySelectorAll(".filter-chip")
+    .forEach((btn) => btn.classList.remove("filter-chip--active"));
+  clickedBtn.classList.add("filter-chip--active");
+  state.currentPage = 1;
+  renderGlossaryTable();
 }
 
 function onInput() {
@@ -250,28 +263,7 @@ function onInput() {
   counter.textContent = `${value.length} / 300`;
   counter.className =
     "char-counter" + (value.length > 250 ? " char-counter--warning" : "");
-  if (value.trim().length > 2) checkForDuplicate();
-  else hideDupeWarning();
-}
-
-function checkForDuplicate() {
-  const query = document.getElementById("raw-input").value.trim().toLowerCase();
-  const match = glossary.find(
-    (entry) =>
-      entry.en.toLowerCase().includes(query) ||
-      entry.ar.includes(query) ||
-      query.includes(entry.en.toLowerCase())
-  );
-  if (match) {
-    document.getElementById(
-      "dupe-warning-msg"
-    ).textContent = `"${match.en}" / "${match.ar}" already in glossary — scroll down to see the approved version.`;
-    document
-      .getElementById("dupe-warning")
-      .classList.add("dupe-warning--visible");
-  } else {
-    hideDupeWarning();
-  }
+  hideDupeWarning();
 }
 
 function hideDupeWarning() {
@@ -318,6 +310,9 @@ async function handleGenerate() {
     document
       .getElementById("result-block")
       .scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // Auto-add to glossary grid
+    autoAddToGlossary(inputText, result.en, result.ar);
   } catch (err) {
     showToast("API error — check your connection", true);
   } finally {
@@ -325,6 +320,28 @@ async function handleGenerate() {
     spinner.style.display = "none";
     generateIcon.style.display = "block";
   }
+}
+
+function autoAddToGlossary(rawInput, toneEN, toneAR) {
+  const alreadyExists = glossary.find(
+    (e) => e.toneEN.toLowerCase() === toneEN.toLowerCase()
+  );
+  if (alreadyExists) return;
+  glossary.unshift({
+    id: nextId++,
+    ar: rawInput,
+    en: rawInput,
+    toneEN,
+    toneAR,
+    product: state.product,
+    audience: state.audience,
+    labelType: state.type,
+    source: "generated",
+  });
+  state.todayCount++;
+  state.currentPage = 1;
+  updateNavStats();
+  renderGlossaryTable();
 }
 
 async function callTranslationAPI(inputText) {
@@ -338,7 +355,7 @@ async function callTranslationAPI(inputText) {
 function saveEntry() {
   if (!state.resultEN) return;
   const alreadyExists = glossary.find(
-    (entry) => entry.en.toLowerCase() === state.resultEN.toLowerCase()
+    (e) => e.toneEN.toLowerCase() === state.resultEN.toLowerCase()
   );
   if (alreadyExists) {
     showToast("Already exists in glossary", true);
@@ -352,36 +369,27 @@ function saveEntry() {
     toneAR: state.resultAR,
     product: state.product,
     audience: state.audience,
+    labelType: state.type,
     source: "added",
   });
   state.todayCount++;
   state.currentPage = 1;
   updateNavStats();
   renderGlossaryTable();
-  showToast("✅ Saved to glossary");
+  showToast("Saved to glossary");
 }
 
 function copyLang(lang) {
-  const text = lang === "en" ? state.resultEN : state.resultAR;
-  navigator.clipboard.writeText(text).catch(() => {});
-  showToast("📋 Copied");
+  navigator.clipboard
+    .writeText(lang === "en" ? state.resultEN : state.resultAR)
+    .catch(() => {});
+  showToast("Copied");
 }
-
 function copyBoth() {
   navigator.clipboard
     .writeText(`EN: ${state.resultEN}\nAR: ${state.resultAR}`)
     .catch(() => {});
-  showToast("📋 Both languages copied");
-}
-
-function setChip(clickedChip) {
-  document
-    .querySelectorAll(".filter-chip")
-    .forEach((chip) => chip.classList.remove("filter-chip--active"));
-  clickedChip.classList.add("filter-chip--active");
-  state.filter = clickedChip.dataset.filter;
-  state.currentPage = 1;
-  renderGlossaryTable();
+  showToast("Both languages copied");
 }
 
 function onSearch() {
@@ -392,21 +400,19 @@ function onSearch() {
 
 function getFilteredRows() {
   const query = state.searchQuery.toLowerCase();
-  const filter = state.filter;
+  const typeFilter = state.tableTypeFilter;
   return glossary.filter((entry) => {
     const matchesSearch =
       !query ||
       entry.ar.includes(query) ||
       entry.en.toLowerCase().includes(query) ||
-      entry.product.toLowerCase().includes(query) ||
-      entry.audience.toLowerCase().includes(query);
-    const matchesFilter =
-      filter === "all"
+      (entry.toneEN || "").toLowerCase().includes(query) ||
+      (entry.toneAR || "").includes(query);
+    const matchesType =
+      typeFilter === "All"
         ? true
-        : entry.product === filter ||
-          entry.audience === filter ||
-          entry.audience.startsWith(filter);
-    return matchesSearch && matchesFilter;
+        : (entry.labelType || "Button") === typeFilter;
+    return matchesSearch && matchesType;
   });
 }
 
@@ -419,35 +425,27 @@ function renderGlossaryTable() {
   const pageRows = filteredRows.slice(startIndex, startIndex + state.perPage);
   const tableBody = document.getElementById("glossary-table-body");
   const emptyState = document.getElementById("glossary-empty-state");
+
   if (!pageRows.length) {
     tableBody.innerHTML = "";
     emptyState.style.display = "flex";
   } else {
     emptyState.style.display = "none";
     tableBody.innerHTML = pageRows
-      .map((entry, index) => buildTableRow(entry, startIndex + index + 1))
+      .map((entry, i) => buildTableRow(entry, startIndex + i + 1))
       .join("");
     if (state.editingId) {
       setTimeout(() => {
-        const focusTarget = document.getElementById(
-          `edit-english-${state.editingId}`
-        );
-        if (focusTarget) {
-          focusTarget.focus();
-          focusTarget.select();
+        const el = document.getElementById(`edit-english-${state.editingId}`);
+        if (el) {
+          el.focus();
+          el.select();
         }
       }, 30);
     }
   }
   renderPagination(totalRows, totalPages);
   updateNavStats();
-}
-
-function buildToneCell(entry) {
-  return `<div class="glossary-grid__cell glossary-grid__cell--tone">
-      <div class="tone-en">${esc(entry.toneEN || "—")}</div>
-      <div class="tone-ar">${esc(entry.toneAR || "—")}</div>
-    </div>`;
 }
 
 function buildTableRow(entry, rowNumber) {
@@ -470,28 +468,48 @@ function buildTableRow(entry, rowNumber) {
     </div>`;
 
   if (state.editingId === entry.id) {
+    const lt = entry.labelType || "Button";
     return `<div class="glossary-grid__row glossary-grid__row--editing">
         <div class="glossary-grid__cell glossary-grid__cell--num">${rowNumber}</div>
         <div class="glossary-grid__cell"><input class="inline-edit-input inline-edit-input--arabic" id="edit-arabic-${
           entry.id
-        }" value="${esc(entry.ar)}" dir="rtl"/></div>
+        }" value="${esc(entry.toneAR || entry.ar)}" dir="rtl"/></div>
         <div class="glossary-grid__cell"><input class="inline-edit-input" id="edit-english-${
           entry.id
-        }" value="${esc(entry.en)}"/></div>
-        ${buildToneCell(entry)}
-        <div class="glossary-grid__cell"><input class="inline-edit-input" id="edit-product-${
-          entry.id
-        }" value="${esc(entry.product)}" style="font-size:12px"/></div>
+        }" value="${esc(entry.toneEN || entry.en)}"/></div>
+        <div class="glossary-grid__cell">
+          <select class="inline-edit-input" id="edit-labeltype-${
+            entry.id
+          }" style="cursor:pointer;">
+            <option value="Button"      ${
+              lt === "Button" ? "selected" : ""
+            }>Button</option>
+            <option value="Error"       ${
+              lt === "Error" ? "selected" : ""
+            }>Error</option>
+            <option value="Placeholder" ${
+              lt === "Placeholder" ? "selected" : ""
+            }>Placeholder</option>
+            <option value="Other"       ${
+              lt === "Other" ? "selected" : ""
+            }>Other</option>
+          </select>
+        </div>
         ${editActions}
       </div>`;
   }
 
   return `<div class="glossary-grid__row">
       <div class="glossary-grid__cell glossary-grid__cell--num">${rowNumber}</div>
-      <div class="glossary-grid__cell cell--arabic">${esc(entry.ar)}</div>
-      <div class="glossary-grid__cell cell--english">${esc(entry.en)}</div>
-      ${buildToneCell(entry)}
-      <div class="glossary-grid__cell">${buildProductBadge(entry.product)}</div>
+      <div class="glossary-grid__cell cell--arabic">${esc(
+        entry.toneAR || entry.ar
+      )}</div>
+      <div class="glossary-grid__cell cell--english">${esc(
+        entry.toneEN || entry.en
+      )}</div>
+      <div class="glossary-grid__cell">${buildLabelTypeBadge(
+        entry.labelType
+      )}</div>
       ${viewActions}
     </div>`;
 }
@@ -510,48 +528,39 @@ function saveRowEdit(id) {
   const newEnglish = document
     .getElementById(`edit-english-${id}`)
     ?.value.trim();
-  const newProduct = document
-    .getElementById(`edit-product-${id}`)
-    ?.value.trim();
-  const newAudience = document
-    .getElementById(`edit-audience-${id}`)
-    ?.value.trim();
+  const newLabelType = document.getElementById(`edit-labeltype-${id}`)?.value;
   if (!newArabic || !newEnglish) {
     showToast("Arabic and English are both required", true);
     return;
   }
   const entry = glossary.find((e) => e.id === id);
   if (entry) {
-    entry.ar = newArabic;
-    entry.en = newEnglish;
-    entry.product = newProduct || entry.product;
-    entry.audience = newAudience || entry.audience;
+    entry.toneAR = newArabic;
+    entry.toneEN = newEnglish;
+    entry.labelType = newLabelType || entry.labelType;
   }
   state.editingId = null;
   renderGlossaryTable();
-  showToast("✏️ Entry updated");
+  showToast("Entry updated");
 }
 
 function deleteEntry(id) {
   if (!confirm("Delete this glossary entry?")) return;
-  glossary = glossary.filter((entry) => entry.id !== id);
+  glossary = glossary.filter((e) => e.id !== id);
   if (state.editingId === id) state.editingId = null;
   renderGlossaryTable();
-  showToast("🗑️ Entry deleted");
+  showToast("Entry deleted");
 }
 
-function buildProductBadge(product) {
-  return product === "TAM"
-    ? '<span class="badge badge--tam">TAM</span>'
-    : '<span class="badge badge--kfh">KFH</span>';
-}
-
-function buildAudienceBadge(audience) {
-  if (audience === "Youth")
-    return '<span class="badge badge--youth">Youth</span>';
-  if (audience.startsWith("TAM"))
-    return `<span class="badge badge--tam">${esc(audience)}</span>`;
-  return '<span class="badge badge--general">General</span>';
+function buildLabelTypeBadge(type) {
+  const map = {
+    Button: "badge--button",
+    Error: "badge--error",
+    Placeholder: "badge--placeholder",
+    Other: "badge--other",
+  };
+  const cls = map[type] || "badge--button";
+  return `<span class="badge ${cls}">${esc(type || "Button")}</span>`;
 }
 
 function renderPagination(totalRows, totalPages) {
@@ -572,20 +581,20 @@ function renderPagination(totalRows, totalPages) {
     })
     .join("");
   container.innerHTML = `
-      <span class="pagination__info">Showing <strong>${rangeStart}–${rangeEnd}</strong> of <strong>${totalRows}</strong></span>
-      <div class="pagination__controls">
-        <button class="pagination__btn" onclick="goToPage(${
-          state.currentPage - 1
-        })" ${state.currentPage === 1 ? "disabled" : ""}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        ${pageButtons}
-        <button class="pagination__btn" onclick="goToPage(${
-          state.currentPage + 1
-        })" ${state.currentPage === totalPages ? "disabled" : ""}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>`;
+    <span class="pagination__info">Showing <strong>${rangeStart}–${rangeEnd}</strong> of <strong>${totalRows}</strong></span>
+    <div class="pagination__controls">
+      <button class="pagination__btn" onclick="goToPage(${
+        state.currentPage - 1
+      })" ${state.currentPage === 1 ? "disabled" : ""}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      ${pageButtons}
+      <button class="pagination__btn" onclick="goToPage(${
+        state.currentPage + 1
+      })" ${state.currentPage === totalPages ? "disabled" : ""}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>`;
 }
 
 function buildPageRange(current, total) {
@@ -607,11 +616,14 @@ function goToPage(page) {
 }
 
 function exportCSV() {
-  const header = "ID,Arabic,English,KFH Tone EN,KFH Tone AR,Product,Audience\n";
+  const header =
+    "ID,Arabic Raw,English Raw,KFH Tone EN,KFH Tone AR,Label Type,Product,Audience\n";
   const rows = glossary
     .map(
       (e) =>
-        `${e.id},"${e.ar}","${e.en}","${e.toneEN}","${e.toneAR}","${e.product}","${e.audience}"`
+        `${e.id},"${e.ar}","${e.en}","${e.toneEN}","${e.toneAR}","${
+          e.labelType || "Button"
+        }","${e.product}","${e.audience}"`
     )
     .join("\n");
   const blob = new Blob(["\uFEFF" + header + rows], {
@@ -623,7 +635,7 @@ function exportCSV() {
   });
   link.click();
   URL.revokeObjectURL(link.href);
-  showToast("📊 Exported as CSV");
+  showToast("Exported as CSV");
 }
 
 function updateNavStats() {

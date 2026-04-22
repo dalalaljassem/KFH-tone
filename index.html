@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 
@@ -23,39 +23,18 @@
   </header>
 
   <section class="card">
-    <div class="card__eyebrow">Configuration</div>
-    <div class="card__heading">Set the tone context</div>
-    <div class="config-grid">
-      <div class="field">
-        <div class="field__label">Product</div>
-        <div class="seg-control" id="seg-product">
-          <button class="seg-control__btn seg-control__btn--active" onclick="setSeg('product','KFH',this)">KFH</button>
-          <button class="seg-control__btn" onclick="setSeg('product','TAM',this)">TAM</button>
-        </div>
-      </div>
-      <div class="field">
-        <div class="field__label">Audience</div>
-        <div class="seg-control" id="seg-audience">
-          <button class="seg-control__btn seg-control__btn--active" onclick="setSeg('audience','General',this)">General</button>
-          <button class="seg-control__btn" onclick="setSeg('audience','Youth',this)">Youth</button>
-        </div>
-      </div>
-      <div class="field">
-        <div class="field__label">Label type</div>
-        <div class="seg-control" id="seg-type">
-          <button class="seg-control__btn seg-control__btn--active" onclick="setSeg('type','Button',this)">Button</button>
-          <button class="seg-control__btn" onclick="setSeg('type','Error',this)">Error</button>
-          <button class="seg-control__btn" onclick="setSeg('type','Placeholder',this)">Placeholder</button>
-          <button class="seg-control__btn" onclick="setSeg('type','Other',this)">Other</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
     <div class="card__eyebrow">Input</div>
     <div class="card__heading">What should we rewrite?</div>
-    <div class="field__label">Raw label input</div>
+
+    <div class="field__label">Label type</div>
+    <div class="seg-control" id="seg-type">
+      <button class="seg-control__btn seg-control__btn--active" onclick="setSeg('type','Button',this)">Button</button>
+      <button class="seg-control__btn" onclick="setSeg('type','Error',this)">Error</button>
+      <button class="seg-control__btn" onclick="setSeg('type','Placeholder',this)">Placeholder</button>
+      <button class="seg-control__btn" onclick="setSeg('type','Other',this)">Other</button>
+    </div>
+
+    <div class="field__label" style="margin-top:16px;">Raw label input</div>
     <textarea
       id="raw-input"
       class="text-input"
@@ -152,11 +131,13 @@
             oninput="onSearch()"
           />
         </div>
-        <div class="filter-chips" id="filter-chips">
-          <button class="filter-chip"                  data-filter="all" onclick="setChip(this)">All</button>
-          <button class="filter-chip filter-chip--active" data-filter="KFH" onclick="setChip(this)">KFH</button>
-          <button class="filter-chip chip--tam"        data-filter="TAM" onclick="setChip(this)">TAM</button>
-        </div>
+    <div class="filter-chips" id="filter-chips">
+      <button class="filter-chip filter-chip--active" data-type="All"         onclick="setTableType('All',this)">All</button>
+      <button class="filter-chip"                     data-type="Button"      onclick="setTableType('Button',this)">Button</button>
+      <button class="filter-chip"                     data-type="Error"       onclick="setTableType('Error',this)">Error</button>
+      <button class="filter-chip"                     data-type="Placeholder" onclick="setTableType('Placeholder',this)">Placeholder</button>
+      <button class="filter-chip"                     data-type="Other"       onclick="setTableType('Other',this)">Other</button>
+    </div>
       </div>
       <div class="glossary-toolbar__right">
         <button class="btn--export" onclick="exportCSV()">
@@ -166,16 +147,18 @@
           Export CSV
         </button>
       </div>
+
     </div>
+
+
 
     <div class="glossary-table-wrap">
       <div class="glossary-grid">
         <div class="glossary-grid__header">
           <div class="glossary-grid__cell glossary-grid__cell--num">#</div>
-          <div class="glossary-grid__cell">🇰🇼 Arabic</div>
-          <div class="glossary-grid__cell">🇬🇧 English</div>
-          <div class="glossary-grid__cell">✨ KFH Tone</div>
-          <div class="glossary-grid__cell">🏦 Product</div>
+          <div class="glossary-grid__cell">🇰🇼 Arabic KFH Tone</div>
+          <div class="glossary-grid__cell">🇬🇧 English KFH Tone</div>
+          <div class="glossary-grid__cell">🏷️ Label Type</div>
           <div class="glossary-grid__cell glossary-grid__cell--actions">⚙️ Actions</div>
         </div>
         <div id="glossary-table-body"></div>
