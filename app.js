@@ -1,8 +1,9 @@
+const API_BASE = "http://localhost:8000";
+
 const state = {
   product: "KFH",
   audience: "General",
   type: "Button",
-  filter: "KFH",
   tableTypeFilter: "All",
   searchQuery: "",
   currentPage: 1,
@@ -14,215 +15,45 @@ const state = {
   todayCount: 0,
 };
 
-let glossary = [
-  {
-    id: 1,
-    ar: "حياك الله",
-    en: "Welcome",
-    toneEN: "Welcome back",
-    toneAR: "حياك الله",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 2,
-    ar: "اضغط للدخول بخاصية الوجه",
-    en: "Tap to login by Face ID",
-    toneEN: "Sign in with Face ID",
-    toneAR: "سجّل دخولك عبر Face ID",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 3,
-    ar: "الدخول بإستخدام بياناتك",
-    en: "Login using credentials",
-    toneEN: "Sign in with your details",
-    toneAR: "سجّل دخولك باستخدام بياناتك",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 4,
-    ar: "الدخول بمستخدم اخر",
-    en: "Login with another user",
-    toneEN: "Sign in with another account",
-    toneAR: "سجّل الدخول بحساب آخر",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 5,
-    ar: "عروضنا",
-    en: "Offers",
-    toneEN: "Explore our offers",
-    toneAR: "اكتشف عروضنا",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 6,
-    ar: "مكافآت بيتك",
-    en: "Baitek Rewards",
-    toneEN: "Discover Baitek Rewards",
-    toneAR: "اكتشف مكافآت بيتك",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 7,
-    ar: "تواصل معنا",
-    en: "Contact Us",
-    toneEN: "Get in touch with us",
-    toneAR: "تواصل معنا بكل سهولة",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 8,
-    ar: "أوتو بيتك",
-    en: "KFH Auto",
-    toneEN: "Explore KFH Auto",
-    toneAR: "اكتشف KFH Auto",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 9,
-    ar: "الإشعارات",
-    en: "Push Notifications",
-    toneEN: "Your notifications",
-    toneAR: "إشعاراتك",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 10,
-    ar: "لا يوجد إشعارات",
-    en: "No Notifications",
-    toneEN: "No notifications yet",
-    toneAR: "لا توجد إشعارات حتى الآن",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 11,
-    ar: "أين تجدنا",
-    en: "Find Us",
-    toneEN: "Find a branch near you",
-    toneAR: "اعثر على أقرب فرع لك",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 12,
-    ar: "محول العملات",
-    en: "Exchange",
-    toneEN: "Currency converter",
-    toneAR: "محوّل العملات",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 13,
-    ar: "حاسبتنا",
-    en: "Calculator",
-    toneEN: "Try our calculator",
-    toneAR: "جرّب حاسبتنا",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 14,
-    ar: "بيتك للمساعدة",
-    en: "KFH Assistant",
-    toneEN: "Chat with KFH Assistant",
-    toneAR: "تحدّث مع مساعد بيتك",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 15,
-    ar: "احجز موعدك",
-    en: "Book Appointment",
-    toneEN: "Book your appointment",
-    toneAR: "احجز موعدك بكل سهولة",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 16,
-    ar: "المحافظ الرقمية",
-    en: "Digital Wallets",
-    toneEN: "Manage your digital wallets",
-    toneAR: "أدر محافظك الرقمية",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 17,
-    ar: "بيان الخصوصية",
-    en: "Privacy Notice",
-    toneEN: "Read our privacy notice",
-    toneAR: "اطّلع على بيان الخصوصية",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 18,
-    ar: "التالي",
-    en: "Next",
-    toneEN: "Continue",
-    toneAR: "متابعة",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 19,
-    ar: "دخول",
-    en: "Login",
-    toneEN: "Sign in",
-    toneAR: "سجّل الدخول",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-  {
-    id: 20,
-    ar: "مستخدم جديد",
-    en: "New User",
-    toneEN: "Create a new account",
-    toneAR: "أنشئ حسابًا جديدًا",
-    product: "KFH",
-    audience: "General",
-    source: "preset",
-  },
-];
-
-let nextId = 21;
+let glossary = [];
+let nextId = 1;
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderGlossaryTable();
-  updateNavStats();
+  loadGlossary();
 });
+
+async function loadGlossary() {
+  try {
+    const response = await fetch(`${API_BASE}/jsonl/contents`);
+    if (!response.ok)
+      throw new Error(`Failed to load glossary: ${response.status}`);
+
+    const data = await response.json();
+
+    glossary = data.records.map((record, index) => ({
+      id: index + 1,
+      ar: record.text_ar || record.raw_text_ar || "",
+      en: record.text_en || record.raw_text_en || "",
+      toneEN: record.kfh_tone_en || record.normalized_text_en || "",
+      toneAR: record.kfh_tone_ar || record.normalized_text_ar || "",
+      labelType: record.category || record.general_category || "Button",
+      product: record.product || "KFH",
+      audience: record.audience || "General",
+      source: "preset",
+    }));
+
+    nextId = glossary.length + 1;
+
+    renderGlossaryTable();
+    updateNavStats();
+  } catch (err) {
+    console.warn("Could not reach backend, starting with empty glossary.", err);
+    glossary = [];
+    renderGlossaryTable();
+    updateNavStats();
+    showToast("Backend offline — glossary not loaded", true);
+  }
+}
 
 function setSeg(key, value, clickedBtn) {
   state[key] = value;
@@ -248,8 +79,8 @@ function setSeg(key, value, clickedBtn) {
 
 function setTableType(value, clickedBtn) {
   state.tableTypeFilter = value;
-  const control = clickedBtn.closest(".filter-chips");
-  control
+  clickedBtn
+    .closest(".filter-chips")
     .querySelectorAll(".filter-chip")
     .forEach((btn) => btn.classList.remove("filter-chip--active"));
   clickedBtn.classList.add("filter-chip--active");
@@ -279,13 +110,7 @@ async function handleGenerate() {
     return;
   }
 
-  const generateBtn = document.getElementById("generate-btn");
-  const spinner = document.getElementById("spinner");
-  const generateIcon = document.getElementById("generate-icon");
-
-  generateBtn.disabled = true;
-  spinner.style.display = "block";
-  generateIcon.style.display = "none";
+  setGenerateLoading(true);
 
   try {
     const result = await callTranslationAPI(inputText);
@@ -293,12 +118,12 @@ async function handleGenerate() {
     state.resultAR = result.ar;
     state.lastInput = inputText;
 
-    const outputEnglish = document.getElementById("output-english");
-    const outputArabic = document.getElementById("output-arabic");
-    outputEnglish.textContent = result.en;
-    outputEnglish.classList.add("lang-pane__output--has-result");
-    outputArabic.textContent = result.ar;
-    outputArabic.classList.add("lang-pane__output--has-result");
+    const outEN = document.getElementById("output-english");
+    const outAR = document.getElementById("output-arabic");
+    outEN.textContent = result.en;
+    outAR.textContent = result.ar;
+    outEN.classList.add("lang-pane__output--has-result");
+    outAR.classList.add("lang-pane__output--has-result");
 
     const metaLabel = `${state.product} · ${state.audience} · ${state.type}`;
     document.getElementById("meta-english").textContent = metaLabel;
@@ -311,15 +136,43 @@ async function handleGenerate() {
       .getElementById("result-block")
       .scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-    // Auto-add to glossary grid
     autoAddToGlossary(inputText, result.en, result.ar);
   } catch (err) {
     showToast("API error — check your connection", true);
   } finally {
-    generateBtn.disabled = false;
-    spinner.style.display = "none";
-    generateIcon.style.display = "block";
+    setGenerateLoading(false);
   }
+}
+
+function setGenerateLoading(isLoading) {
+  document.getElementById("generate-btn").disabled = isLoading;
+  document.getElementById("spinner").style.display = isLoading
+    ? "block"
+    : "none";
+  document.getElementById("generate-icon").style.display = isLoading
+    ? "none"
+    : "block";
+}
+
+async function callTranslationAPI(inputText) {
+  const response = await fetch(`${API_BASE}/recommend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      input_text: inputText,
+      category: state.type,
+      allow_generation: true,
+    }),
+  });
+
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+  const data = await response.json();
+
+  return {
+    en: data.text_en || data.recommended_text_en || data.toneEN || inputText,
+    ar: data.text_ar || data.recommended_text_ar || data.toneAR || inputText,
+  };
 }
 
 function autoAddToGlossary(rawInput, toneEN, toneAR) {
@@ -342,14 +195,6 @@ function autoAddToGlossary(rawInput, toneEN, toneAR) {
   state.currentPage = 1;
   updateNavStats();
   renderGlossaryTable();
-}
-
-async function callTranslationAPI(inputText) {
-  await new Promise((resolve) => setTimeout(resolve, 1300));
-  return {
-    en: `[API placeholder] KFH tone for: "${inputText}"`,
-    ar: `[نتيجة مؤقتة] النبرة لـ: "${inputText}"`,
-  };
 }
 
 function saveEntry() {
@@ -385,6 +230,7 @@ function copyLang(lang) {
     .catch(() => {});
   showToast("Copied");
 }
+
 function copyBoth() {
   navigator.clipboard
     .writeText(`EN: ${state.resultEN}\nAR: ${state.resultAR}`)
@@ -399,15 +245,15 @@ function onSearch() {
 }
 
 function getFilteredRows() {
-  const query = state.searchQuery.toLowerCase();
+  const q = state.searchQuery.toLowerCase();
   const typeFilter = state.tableTypeFilter;
   return glossary.filter((entry) => {
     const matchesSearch =
-      !query ||
-      entry.ar.includes(query) ||
-      entry.en.toLowerCase().includes(query) ||
-      (entry.toneEN || "").toLowerCase().includes(query) ||
-      (entry.toneAR || "").includes(query);
+      !q ||
+      entry.ar.includes(q) ||
+      entry.en.toLowerCase().includes(q) ||
+      (entry.toneEN || "").toLowerCase().includes(q) ||
+      (entry.toneAR || "").includes(q);
     const matchesType =
       typeFilter === "All"
         ? true
@@ -417,12 +263,14 @@ function getFilteredRows() {
 }
 
 function renderGlossaryTable() {
-  const filteredRows = getFilteredRows();
-  const totalRows = filteredRows.length;
+  const filtered = getFilteredRows();
+  const totalRows = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / state.perPage));
   if (state.currentPage > totalPages) state.currentPage = totalPages;
+
   const startIndex = (state.currentPage - 1) * state.perPage;
-  const pageRows = filteredRows.slice(startIndex, startIndex + state.perPage);
+  const pageRows = filtered.slice(startIndex, startIndex + state.perPage);
+
   const tableBody = document.getElementById("glossary-table-body");
   const emptyState = document.getElementById("glossary-empty-state");
 
@@ -444,12 +292,14 @@ function renderGlossaryTable() {
       }, 30);
     }
   }
+
   renderPagination(totalRows, totalPages);
   updateNavStats();
 }
 
 function buildTableRow(entry, rowNumber) {
-  const editActions = `<div class="glossary-grid__cell glossary-grid__cell--actions">
+  const editActions = `
+    <div class="glossary-grid__cell glossary-grid__cell--actions">
       <button class="icon-btn icon-btn--confirm" onclick="saveRowEdit(${entry.id})" title="Save">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -458,7 +308,8 @@ function buildTableRow(entry, rowNumber) {
       </button>
     </div>`;
 
-  const viewActions = `<div class="glossary-grid__cell glossary-grid__cell--actions">
+  const viewActions = `
+    <div class="glossary-grid__cell glossary-grid__cell--actions">
       <button class="icon-btn" onclick="startRowEdit(${entry.id})" title="Edit">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 9.5h2l5-5-2-2-5 5v2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 2.5l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       </button>
@@ -469,14 +320,19 @@ function buildTableRow(entry, rowNumber) {
 
   if (state.editingId === entry.id) {
     const lt = entry.labelType || "Button";
-    return `<div class="glossary-grid__row glossary-grid__row--editing">
+    return `
+      <div class="glossary-grid__row glossary-grid__row--editing">
         <div class="glossary-grid__cell glossary-grid__cell--num">${rowNumber}</div>
-        <div class="glossary-grid__cell"><input class="inline-edit-input inline-edit-input--arabic" id="edit-arabic-${
-          entry.id
-        }" value="${esc(entry.toneAR || entry.ar)}" dir="rtl"/></div>
-        <div class="glossary-grid__cell"><input class="inline-edit-input" id="edit-english-${
-          entry.id
-        }" value="${esc(entry.toneEN || entry.en)}"/></div>
+        <div class="glossary-grid__cell">
+          <input class="inline-edit-input inline-edit-input--arabic" id="edit-arabic-${
+            entry.id
+          }" value="${esc(entry.toneAR || entry.ar)}" dir="rtl"/>
+        </div>
+        <div class="glossary-grid__cell">
+          <input class="inline-edit-input" id="edit-english-${
+            entry.id
+          }" value="${esc(entry.toneEN || entry.en)}"/>
+        </div>
         <div class="glossary-grid__cell">
           <select class="inline-edit-input" id="edit-labeltype-${
             entry.id
@@ -499,7 +355,8 @@ function buildTableRow(entry, rowNumber) {
       </div>`;
   }
 
-  return `<div class="glossary-grid__row">
+  return `
+    <div class="glossary-grid__row">
       <div class="glossary-grid__cell glossary-grid__cell--num">${rowNumber}</div>
       <div class="glossary-grid__cell cell--arabic">${esc(
         entry.toneAR || entry.ar
@@ -512,6 +369,18 @@ function buildTableRow(entry, rowNumber) {
       )}</div>
       ${viewActions}
     </div>`;
+}
+
+function buildLabelTypeBadge(type) {
+  const map = {
+    Button: "badge--button",
+    Error: "badge--error",
+    Placeholder: "badge--placeholder",
+    Other: "badge--other",
+  };
+  return `<span class="badge ${map[type] || "badge--button"}">${esc(
+    type || "Button"
+  )}</span>`;
 }
 
 function startRowEdit(id) {
@@ -552,34 +421,25 @@ function deleteEntry(id) {
   showToast("Entry deleted");
 }
 
-function buildLabelTypeBadge(type) {
-  const map = {
-    Button: "badge--button",
-    Error: "badge--error",
-    Placeholder: "badge--placeholder",
-    Other: "badge--other",
-  };
-  const cls = map[type] || "badge--button";
-  return `<span class="badge ${cls}">${esc(type || "Button")}</span>`;
-}
-
 function renderPagination(totalRows, totalPages) {
   const container = document.getElementById("pagination");
   if (totalRows === 0) {
     container.innerHTML = "";
     return;
   }
+
   const rangeStart = (state.currentPage - 1) * state.perPage + 1;
   const rangeEnd = Math.min(state.currentPage * state.perPage, totalRows);
   const pageButtons = buildPageRange(state.currentPage, totalPages)
     .map((page) => {
       if (page === "…") return `<span class="pagination__ellipsis">…</span>`;
-      const isActive = page === state.currentPage;
+      const active = page === state.currentPage;
       return `<button class="pagination__btn${
-        isActive ? " pagination__btn--active" : ""
+        active ? " pagination__btn--active" : ""
       }" onclick="goToPage(${page})">${page}</button>`;
     })
     .join("");
+
   container.innerHTML = `
     <span class="pagination__info">Showing <strong>${rangeStart}–${rangeEnd}</strong> of <strong>${totalRows}</strong></span>
     <div class="pagination__controls">
