@@ -441,7 +441,7 @@ class DeterministicMatcher:
             input_text=input_text,
             language=language,
             selected_category=category,
-            decision_type="exact_match",
+            decision_type="Closest match",
             recommended_text_en=candidate.raw_text_en,
             recommended_text_ar=candidate.raw_text_ar,
             confidence=1.0,
@@ -569,7 +569,7 @@ class LabelRecommendationEngine:
             language=match.language,
             top_candidates=match.top_candidates,
         )
-        result["decision_type"] = "generated_suggestion"
+        result["decision_type"] = "AI Suggestion"
         result["generated"] = generated
         result["explanation"] = f"Generated using Ollama (top candidate: {match.confidence:.3f})."
         return self._filter_output(result)

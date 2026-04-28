@@ -65,17 +65,19 @@
     </div>
   </section>
 
+  <!-- ── Main result block ───────────────────────────────────────────────── -->
   <div class="result-block" id="result-block" aria-live="polite">
+
+    <!-- Header: label + decision badge only (no action buttons) -->
     <div class="result-block__header">
       <div class="result-block__label">
         <div class="pulse-dot"></div>
-        Generated result
-      </div>
-      <div class="result-block__actions">
-        <button class="btn btn--ghost" style="font-size:12.5px;padding:7px 16px;" onclick="copyBoth()">Copy both</button>
-        <button class="btn btn--primary" style="font-size:12.5px;padding:7px 16px;" onclick="saveEntry()">Save to glossary</button>
+        <span id="result-label">Generated result</span>
+        <span id="result-source-badge" class="source-badge" style="display:none"></span>
       </div>
     </div>
+
+    <!-- Bilingual output -->
     <div class="bilingual-grid">
       <div class="lang-pane">
         <div class="lang-pane__label">
@@ -104,6 +106,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Confidence footer -->
+    <div class="conf-footer" id="suggestion-footer">
+      <div class="conf-chip" id="confidence-pie-main"></div>
+    </div>
+
+    <!-- Show more toggle + additional suggestions -->
+    <div class="more-suggestions">
+      <div class="more-suggestions__toggle">
+        <button class="btn btn--ghost" id="show-more-btn" onclick="toggleMore()" style="margin:12px 16px;display:none;">Show more</button>
+      </div>
+      <div id="more-suggestions" class="more-suggestions__container" style="display:none"></div>
+    </div>
+
   </div>
 
   <div class="section-label">
@@ -128,13 +144,13 @@
             oninput="onSearch()"
           />
         </div>
-    <div class="filter-chips" id="filter-chips">
-      <button class="filter-chip filter-chip--active" data-type="All"         onclick="setTableType('All',this)">All</button>
-      <button class="filter-chip"                     data-type="Button"      onclick="setTableType('Button',this)">Button</button>
-      <button class="filter-chip"                     data-type="Error"       onclick="setTableType('Error',this)">Error</button>
-      <button class="filter-chip"                     data-type="Placeholder" onclick="setTableType('Placeholder',this)">Placeholder</button>
-      <button class="filter-chip"                     data-type="Other"       onclick="setTableType('Other',this)">Other</button>
-    </div>
+        <div class="filter-chips" id="filter-chips">
+          <button class="filter-chip filter-chip--active" data-type="All" onclick="setTableType('All',this)">All</button>
+          <button class="filter-chip" data-type="Button" onclick="setTableType('Button',this)">Button</button>
+          <button class="filter-chip" data-type="Error" onclick="setTableType('Error',this)">Error</button>
+          <button class="filter-chip" data-type="Placeholder" onclick="setTableType('Placeholder',this)">Placeholder</button>
+          <button class="filter-chip" data-type="Other" onclick="setTableType('Other',this)">Other</button>
+        </div>
       </div>
       <div class="glossary-toolbar__right">
         <button class="btn--export" onclick="exportCSV()">
@@ -144,10 +160,7 @@
           Export CSV
         </button>
       </div>
-
     </div>
-
-
 
     <div class="glossary-table-wrap">
       <div class="glossary-grid">
