@@ -1,14 +1,24 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import json
 from pathlib import Path
-
 from label_engine import LabelRecommendationEngine, EngineConfig
 
 app = FastAPI(title="Label Recommendation API", version="1.0.0")
 
-config = EngineConfig(csv_path="taxonomy_enriched.jsonl", debug_mode=True)
+# Enable CORS so the webapp (likely running on a different port) can call the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with explicit origins in production, e.g., ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DATA_PATH = Path(__file__).parent / "taxonomy_enriched.jsonl"
+config = EngineConfig(csv_path=str(DATA_PATH), debug_mode=True)
 engine = LabelRecommendationEngine(config)
 
 

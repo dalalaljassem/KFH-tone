@@ -13,14 +13,97 @@ const state = {
   resultAR: "",
   lastInput: "",
   todayCount: 0,
+  // Will be populated from backend /categories to ensure valid requests
+  selectedCategory: null,
+  categories: [],
 };
 
 let glossary = [];
 let nextId = 1;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadCategories();
   loadGlossary();
 });
+
+async function loadCategories() {
+  try {
+    const response = await fetch(`${API_BASE}/categories`);
+    if (!response.ok) throw new Error(`Failed to load categories: ${response.status}`);
+    const data = await response.json();
+    const categories = Array.isArray(data?.categories) ? data.categories : (Array.isArray(data) ? data : []);
+    if (categories.length === 0) {
+      console.warn("No categories returned by backend.");
+      return;
+    }
+    state.categories = categories;
+    // If selectedCategory is not set or invalid, pick the first valid one
+    if (!state.selectedCategory || !categories.includes(state.selectedCategory)) {
+      state.selectedCategory = categories[0];
+    }
+    renderCategorySegControl();
+    renderFilterChips();
+  } catch (err) {
+    console.warn("Could not load categories from backend.", err);
+    // Fallback to static categories if backend not available
+    const fallback = [
+      "button_or_action",
+      "description",
+      "input_or_selection",
+      "label_or_navigation",
+      "legal_or_policy",
+      "other",
+      "status_or_feedback",
+      "title",
+    ];
+    state.categories = fallback;
+    if (!state.selectedCategory) state.selectedCategory = fallback[0];
+    renderCategorySegControl();
+    renderFilterChips();
+  }
+}
+
+function toTitle(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function renderCategorySegControl() {
+  const wrap = document.getElementById("seg-type");
+  if (!wrap) return;
+  const cats = state.categories || [];
+  if (!cats.length) {
+    wrap.innerHTML = '<button class="seg-control__btn seg-control__btn--active" disabled>Loading…</button>';
+    return;
+  }
+  wrap.innerHTML = cats
+    .map(
+      (c) => `<button class="seg-control__btn ${
+        c === state.selectedCategory ? "seg-control__btn--active" : ""
+      }" onclick="setSeg('selectedCategory','${c}',this)">${toTitle(c)}</button>`
+    )
+    .join("");
+}
+
+function renderFilterChips() {
+  const container = document.getElementById("filter-chips");
+  if (!container) return;
+  const chips = [
+    `<button class="filter-chip ${
+      state.tableTypeFilter === "All" ? "filter-chip--active" : ""
+    }" data-type="All" onclick="setTableType('All',this)">All</button>`,
+    ...(state.categories || []).map(
+      (c) => `<button class="filter-chip ${
+        state.tableTypeFilter === c ? "filter-chip--active" : ""
+      }" data-type="${c}" onclick="setTableType('${c}',this)">${toTitle(c)}</button>`
+    ),
+  ];
+  container.innerHTML = chips.join("");
+}
 
 async function loadGlossary() {
   try {
@@ -36,7 +119,7 @@ async function loadGlossary() {
       en: record.text_en || record.raw_text_en || "",
       toneEN: record.kfh_tone_en || record.normalized_text_en || "",
       toneAR: record.kfh_tone_ar || record.normalized_text_ar || "",
-      labelType: record.category || record.general_category || "Button",
+      labelType: record.category || record.general_category || "other",
       product: record.product || "KFH",
       audience: record.audience || "General",
       source: "preset",
@@ -125,7 +208,7 @@ async function handleGenerate() {
     outEN.classList.add("lang-pane__output--has-result");
     outAR.classList.add("lang-pane__output--has-result");
 
-    const metaLabel = `${state.product} · ${state.audience} · ${state.type}`;
+    const metaLabel = `${state.product} · ${state.audience} · ${toTitle(state.selectedCategory || "")}`;
     document.getElementById("meta-english").textContent = metaLabel;
     document.getElementById("meta-arabic").textContent = metaLabel;
 
@@ -160,7 +243,8 @@ async function callTranslationAPI(inputText) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       input_text: inputText,
-      category: state.type,
+      // Use the selected backend category only
+      category: state.selectedCategory,
       allow_generation: true,
     }),
   });
@@ -188,7 +272,7 @@ function autoAddToGlossary(rawInput, toneEN, toneAR) {
     toneAR,
     product: state.product,
     audience: state.audience,
-    labelType: state.type,
+    labelType: state.selectedCategory || "other",
     source: "generated",
   });
   state.todayCount++;
@@ -214,7 +298,7 @@ function saveEntry() {
     toneAR: state.resultAR,
     product: state.product,
     audience: state.audience,
-    labelType: state.type,
+    labelType: state.selectedCategory || "other",
     source: "added",
   });
   state.todayCount++;
@@ -257,7 +341,7 @@ function getFilteredRows() {
     const matchesType =
       typeFilter === "All"
         ? true
-        : (entry.labelType || "Button") === typeFilter;
+        : (entry.labelType || "other") === typeFilter;
     return matchesSearch && matchesType;
   });
 }
@@ -319,7 +403,22 @@ function buildTableRow(entry, rowNumber) {
     </div>`;
 
   if (state.editingId === entry.id) {
-    const lt = entry.labelType || "Button";
+    const lt = entry.labelType || "other";
+    const opts = (state.categories && state.categories.length
+      ? state.categories
+      : [
+          "button_or_action",
+          "description",
+          "input_or_selection",
+          "label_or_navigation",
+          "legal_or_policy",
+          "other",
+          "status_or_feedback",
+          "title",
+        ]
+    )
+      .map((c) => `<option value="${c}" ${lt === c ? "selected" : ""}>${toTitle(c)}</option>`) 
+      .join("");
     return `
       <div class="glossary-grid__row glossary-grid__row--editing">
         <div class="glossary-grid__cell glossary-grid__cell--num">${rowNumber}</div>
@@ -337,18 +436,7 @@ function buildTableRow(entry, rowNumber) {
           <select class="inline-edit-input" id="edit-labeltype-${
             entry.id
           }" style="cursor:pointer;">
-            <option value="Button"      ${
-              lt === "Button" ? "selected" : ""
-            }>Button</option>
-            <option value="Error"       ${
-              lt === "Error" ? "selected" : ""
-            }>Error</option>
-            <option value="Placeholder" ${
-              lt === "Placeholder" ? "selected" : ""
-            }>Placeholder</option>
-            <option value="Other"       ${
-              lt === "Other" ? "selected" : ""
-            }>Other</option>
+            ${opts}
           </select>
         </div>
         ${editActions}
@@ -372,15 +460,9 @@ function buildTableRow(entry, rowNumber) {
 }
 
 function buildLabelTypeBadge(type) {
-  const map = {
-    Button: "badge--button",
-    Error: "badge--error",
-    Placeholder: "badge--placeholder",
-    Other: "badge--other",
-  };
-  return `<span class="badge ${map[type] || "badge--button"}">${esc(
-    type || "Button"
-  )}</span>`;
+  // Generic badge that displays the backend category as a title-cased label
+  const txt = toTitle(type || "other");
+  return `<span class="badge">${esc(txt)}</span>`;
 }
 
 function startRowEdit(id) {
@@ -482,7 +564,7 @@ function exportCSV() {
     .map(
       (e) =>
         `${e.id},"${e.ar}","${e.en}","${e.toneEN}","${e.toneAR}","${
-          e.labelType || "Button"
+          e.labelType || "other"
         }","${e.product}","${e.audience}"`
     )
     .join("\n");
