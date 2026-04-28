@@ -37,6 +37,7 @@ class EngineConfig:
     ollama_temperature: float = 0.0
     request_timeout_seconds: int = 120
     debug_mode: bool= True
+    enable_embedding_cache: bool = True
 
 
 @dataclass(frozen=True)
@@ -232,23 +233,107 @@ class EmbeddingIndex:
         self._matrices: Dict[Tuple[str, str], np.ndarray] = {}
         self._build()
 
-    def _build(self) -> None:
+    def _slug(self, value: str) -> str:
+        return re.sub(r"[^A-Za-z0-9_]+", "_", value.strip())
+
+    def _cache_paths(self) -> Tuple[Path, Path]:
+        data_path = Path(self.config.csv_path)
+        base = data_path.parent
+        stem = data_path.stem
+        model_slug = self._slug(self.config.embedding_model_name.split("/")[-1])
+        npz_path = base / f"embeddings_{stem}_{model_slug}.npz"
+        meta_path = base / f"embeddings_{stem}_{model_slug}.meta.json"
+        return npz_path, meta_path
+
+    def _serialize_candidates(self) -> Dict[str, List[str]]:
+        mapping: Dict[str, List[str]] = {}
         for category, candidates in self.repository.candidates_by_category.items():
-            for language in ("en", "ar"):
-                texts = [
-                    f"{candidate.general_category_en} | {candidate.raw_text_en} | {candidate.raw_text_ar}"
-                    for candidate in candidates
-                ]
-                if texts:
-                    embeddings = self.model.encode(
-                        texts,
-                        normalize_embeddings=True,
-                        convert_to_numpy=True,
-                        show_progress_bar=False,
-                    )
-                    self._matrices[(category, language)] = embeddings.astype(np.float32)
-                else:
+            mapping[category] = [f"{c.raw_text_en}|||{c.raw_text_ar}" for c in candidates]
+        return mapping
+
+    def _load_cache(self) -> bool:
+        if not self.config.enable_embedding_cache:
+            return False
+        npz_path, meta_path = self._cache_paths()
+        if not (npz_path.exists() and meta_path.exists()):
+            return False
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+            data_mtime = Path(self.config.csv_path).stat().st_mtime_ns
+            if meta.get("version") != 1:
+                return False
+            if meta.get("embedding_model_name") != self.config.embedding_model_name:
+                return False
+            if meta.get("data_path") != str(Path(self.config.csv_path)):
+                return False
+            if meta.get("data_mtime_ns") != data_mtime:
+                return False
+            expected = self._serialize_candidates()
+            if meta.get("candidates") != expected:
+                return False
+            archive = np.load(npz_path)
+            for category in self.repository.candidates_by_category.keys():
+                for language in ("en", "ar"):
+                    key = f"{self._slug(category)}__{language}"
+                    if key not in archive:
+                        return False
+                    self._matrices[(category, language)] = archive[key].astype(np.float32)
+            return True
+        except Exception:
+            return False
+
+    def _save_cache(self) -> None:
+        if not self.config.enable_embedding_cache:
+            return
+        npz_path, meta_path = self._cache_paths()
+        try:
+            arrays = {}
+            for (category, language), matrix in self._matrices.items():
+                key = f"{self._slug(category)}__{language}"
+                arrays[key] = matrix
+            np.savez_compressed(npz_path, **arrays)
+            meta = {
+                "version": 1,
+                "created_ns": int(np.datetime64('now').astype('datetime64[ns]').astype(int)),
+                "embedding_model_name": self.config.embedding_model_name,
+                "data_path": str(Path(self.config.csv_path)),
+                "data_mtime_ns": Path(self.config.csv_path).stat().st_mtime_ns,
+                "candidates": self._serialize_candidates(),
+            }
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+        except Exception:
+            # Failing to save cache must not break runtime
+            pass
+
+    def _build(self) -> None:
+        # Try load from cache first
+        npz_path, _ = self._cache_paths()
+        if self._load_cache():
+            print(f"[EmbeddingIndex] Using cached embeddings from: {npz_path}")
+            return
+        # Otherwise compute and then cache
+        print("[EmbeddingIndex] Cache not used. Computing embeddings for all categories...")
+        for category, candidates in self.repository.candidates_by_category.items():
+            texts = [
+                f"{candidate.general_category_en} | {candidate.raw_text_en} | {candidate.raw_text_ar}"
+                for candidate in candidates
+            ]
+            if texts:
+                embeddings = self.model.encode(
+                    texts,
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                    show_progress_bar=False,
+                ).astype(np.float32)
+                for language in ("en", "ar"):
+                    self._matrices[(category, language)] = embeddings
+            else:
+                for language in ("en", "ar"):
                     self._matrices[(category, language)] = np.zeros((0, 0), dtype=np.float32)
+        self._save_cache()
+        print(f"[EmbeddingIndex] Computation finished. Saved embeddings to: {npz_path}")
 
     def query(self, category: str, language: str, text: str) -> np.ndarray:
         matrix = self._matrices[(category, language)]
